@@ -29,8 +29,8 @@ df = pd.DataFrame({
     "image_path": files_list
 })
 
-df.to_csv("data\image_files_list.csv", index=False)
-print("Image list CSV created.")
+# df.to_csv("data\image_files_list.csv", index=False)
+# print("Image list CSV created.")
 
 
 # ================== STEP 2: EXTRACT GROUP INFO ==================

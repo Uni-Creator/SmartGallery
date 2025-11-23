@@ -1,6 +1,7 @@
 import torch
 import clip
 import pandas as pd
+import numpy as np
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 model, preprocess = clip.load("ViT-B/32", device=device)
@@ -16,7 +17,6 @@ with torch.no_grad():
         emb = model.encode_text(text)
         text_embeddings.append(emb.cpu().numpy()[0])
 
-import numpy as np
 np.save("embeddings\caption_embeddings.npy", text_embeddings)
 
 print("Caption embeddings saved.")

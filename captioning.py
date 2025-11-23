@@ -65,7 +65,7 @@ def extract_tags(caption):
 
 # ================== PIPELINE ==================
 
-data = pd.read_csv("data\\final_grouped_images.csv")
+data = pd.read_csv("data\\final_cleaned_data.csv")
 image_paths = data["image_path"].tolist()
 
 captions = []
