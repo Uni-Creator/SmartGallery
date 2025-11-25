@@ -1,0 +1,10 @@
+clip==1.0
+faiss-cpu==1.13.0
+keybert==0.9.0
+numpy==2.1.1
+pandas==2.2.2
+pillow==10.4.0
+torch==2.9.1
+tqdm==4.66.5
+transformers==4.48.3
+pyqt5==5.15.11
