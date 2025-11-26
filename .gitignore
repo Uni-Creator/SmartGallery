@@ -1,8 +1,20 @@
-*.npy
-embeddings/
-data/
-.env
+# Python
 __pycache__/
-.vscode/
-temp_thumb.jpg
-*test*.py
+*.pyc
+
+# Data files
+data/*.csv
+data/*.xlsx
+
+# AI embeddings + FAISS
+embeddings/*.npy
+embeddings/*.idx
+
+# Temporary images
+temp_*
+*.jpg
+*.png
+
+# OS
+.DS_Store
+Thumbs.db
