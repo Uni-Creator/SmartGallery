@@ -13,6 +13,28 @@ A sophisticated AI-powered image gallery application that enables intelligent se
 - **Real-Time Updates**: Monitor directories for new/deleted images and update embeddings on the fly
 - **GPU Support**: Utilizes CUDA for faster processing when available
 
+## Demo & Screenshots
+
+### Main Gallery View
+Shows album-based navigation with infinite scrolling thumbnails.
+
+![Main Gallery](assests/1.png)
+
+---
+
+### AI Search Results
+Natural language search example using query **"cat"** filtered inside albums.
+
+![AI Search](assests/2.png)
+
+---
+
+### Full Image Viewer
+Click any image to open it in a full-size dedicated viewer.
+
+![Full Image Viewer](assests/3.png)
+
+
 ## Architecture
 
 SmartGallery uses a multi-process architecture for optimal performance:
