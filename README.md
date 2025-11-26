@@ -68,7 +68,7 @@ SmartGallery uses a multi-process architecture for optimal performance:
 ### Step 1: Clone the Repository
 
 ```bash
-git clone https://github.com/Uni-Creator/SearchImg.git
+git clone https://github.com/Uni-Creator/SmartGallery.git
 cd SmartGallery
 ```
 
@@ -259,7 +259,7 @@ Contributions are welcome! Please feel free to submit pull requests or open issu
 
 ## Support
 
-For issues, questions, or suggestions, please open an issue on the [GitHub repository](https://github.com/Uni-Creator/SearchImg).
+For issues, questions, or suggestions, please open an issue on the [GitHub repository](https://github.com/Uni-Creator/SmartGallery).
 
 ## Acknowledgments
 
