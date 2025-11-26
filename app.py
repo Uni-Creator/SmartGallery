@@ -15,23 +15,30 @@ from PyQt5.QtGui import QPixmap, QImage
 from PyQt5.QtCore import Qt, pyqtSignal, QObject
 from PIL import Image
 
-import os
 os.environ["QT_LOGGING_RULES"] = "qt.gui.icc=false"
 
 IMAGE_EXTS = (".jpg", ".jpeg", ".png", ".bmp", ".webp")
 
-# ================= THUMBNAIL WORKER =================
+SEARCH_SERVER_CMD = ["python", "search_server.py"]
+ENCODER_SERVER_CMD = ["python", "encoder_server.py"]
+
+
+# Step 1: Thumbnail background worker
 
 class ThumbnailWorker(QObject):
-    thumbnail_loaded = pyqtSignal(str, QPixmap)
+    thumbnail_loaded = pyqtSignal(str, QImage)
 
-    def __init__(self):
+    def __init__(self, cache):
         super().__init__()
         self.queue = Queue()
+        self.cache = cache
         self.thread = threading.Thread(target=self.process_queue, daemon=True)
         self.thread.start()
 
     def add_task(self, path):
+        if path in self.cache:
+            self.thumbnail_loaded.emit(path, self.cache[path])
+            return
         self.queue.put(path)
 
     def process_queue(self):
@@ -42,22 +49,29 @@ class ThumbnailWorker(QObject):
                 break
 
             try:
-                img = Image.open(path)
-                img.thumbnail((200, 200))
+                image = QImage(path)
 
-                if img.mode != "RGB":
-                    img = img.convert("RGB")
+                if image.isNull():
+                    continue
 
-                buffer = BytesIO()
-                img.save(buffer, format="PNG")
-                buffer.seek(0)
+                image = image.scaled(
+                    200,
+                    200,
+                    Qt.KeepAspectRatio,
+                    Qt.SmoothTransformation
+                )
 
-                pixmap = QPixmap.fromImage(QImage.fromData(buffer.read()))
-                self.thumbnail_loaded.emit(path, pixmap)
-            except:
-                pass
+                # Cache QImage, not QPixmap
+                self.cache[path] = image
 
-# ================= IMAGE VIEWER =================
+                self.thumbnail_loaded.emit(path, image)
+
+            except Exception as e:
+                print("Thumbnail error:", e)
+
+
+
+# Step 2: Full image viewer dialog
 
 class FullImageViewer(QDialog):
     def __init__(self, image_path):
@@ -72,15 +86,15 @@ class FullImageViewer(QDialog):
         layout.addWidget(self.label)
         self.setLayout(layout)
 
-        self.image_path = image_path
-        self.load_image()
+        self.load_image(image_path)
 
-    def load_image(self):
-        pix = QPixmap(self.image_path)
+    def load_image(self, image_path):
+        pix = QPixmap(image_path)
         pix = pix.scaled(880, 650, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         self.label.setPixmap(pix)
 
-# ================= MAIN WINDOW =================
+
+# Step 3: Main gallery window
 
 class GalleryWindow(QMainWindow):
     def __init__(self, base_folder):
@@ -90,45 +104,66 @@ class GalleryWindow(QMainWindow):
         self.resize(1400, 800)
 
         self.base_folder = base_folder
-        self.thumbnail_cache = {}
         self.thumbnail_labels = {}
 
-        # Persistent thumbnail worker
-        self.thumbnail_worker = ThumbnailWorker()
-        self.thumbnail_worker.thumbnail_loaded.connect(self.on_thumbnail_loaded)
+        # Step 3.1: Start search and encoder servers
+        self.search_process = self.start_subprocess(SEARCH_SERVER_CMD, "READY")
+        self.encoder_process = self.start_subprocess(ENCODER_SERVER_CMD, "ENCODER_READY")
 
-        # Persistent search server
-        self.search_process = subprocess.Popen(
-            ["python", "search_server.py"],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            text=True
-        )
-
-        while True:
-            if self.search_process.stdout.readline().strip() == "READY":
-                break
-
+        # Step 3.2: Build initial album map
         self.album_map = self.build_album_map()
         self.current_album = "All Photos"
         self.current_images = self.album_map[self.current_album]
+        self.filtered_images = self.current_images
 
         self.batch_size = 100
         self.loaded_count = 0
 
+        # Step 3.3: Initialize thumbnail worker
+        self.thumbnail_cache = {}
+        self.thumbnail_worker = ThumbnailWorker(self.thumbnail_cache)
+        self.thumbnail_worker.thumbnail_loaded.connect(self.on_thumbnail_loaded)
+
+        # Step 3.4: Build UI
+        self.init_ui()
+        self.load_batch()
+
+
+    # Step 4: Subprocess startup helper
+
+    def start_subprocess(self, command, ready_flag):
+        process = subprocess.Popen(
+            command,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+            bufsize=1
+        )
+
+        while True:
+            line = process.stdout.readline().strip()
+            if line == ready_flag:
+                break
+
+        return process
+
+
+    # Step 5: UI setup
+
+    def init_ui(self):
         main_widget = QWidget()
         main_layout = QHBoxLayout(main_widget)
         self.setCentralWidget(main_widget)
 
-        # Left album panel
         self.album_list = QListWidget()
-        for album in self.album_map.keys():
-            self.album_list.addItem(QListWidgetItem(album))
-        self.album_list.currentItemChanged.connect(self.change_album)
 
+        for album in self.album_map:
+            self.album_list.addItem(album)
+
+        self.album_list.currentItemChanged.connect(self.change_album)
         main_layout.addWidget(self.album_list, 1)
 
-        # Right panel
         right_layout = QVBoxLayout()
 
         self.search_box = QLineEdit()
@@ -149,9 +184,9 @@ class GalleryWindow(QMainWindow):
         main_layout.addLayout(right_layout, 5)
 
         self.album_list.setCurrentRow(0)
-        self.load_batch()
 
-    # ================= ALBUM MANAGEMENT =================
+
+    # Step 6: Album structure management
 
     def build_album_map(self):
         album_map = {"All Photos": []}
@@ -163,43 +198,63 @@ class GalleryWindow(QMainWindow):
 
                     album_map["All Photos"].append(path)
 
+                    # Get relative path from base
                     rel = os.path.relpath(root, self.base_folder)
-                    album = rel.split(os.sep)[0] if rel != "." else "Misc"
+
+                    if rel == ".":
+                        album = "Misc"
+                    else:
+                        parts = rel.split(os.sep)
+
+                        # Build nested album name like: School / RKM
+                        if len(parts) >= 2:
+                            album = f"{parts[0]} / {parts[1]}"
+                        else:
+                            album = parts[0]
 
                     album_map.setdefault(album, []).append(path)
 
         return album_map
 
+
+
     def change_album(self):
         album = self.album_list.currentItem().text()
+
         self.current_album = album
-        self.current_images = self.album_map[album]
+        self.current_images = self.album_map.get(album, [])
+        self.filtered_images = self.current_images
 
         self.loaded_count = 0
         self.clear_grid()
-
-        self.filtered_images = self.current_images
         self.load_batch()
 
-    # ================= SEARCH =================
+
+    # Step 7: AI search handling
 
     def run_search(self):
         query = self.search_box.text().strip()
 
-        if query == "":
+        if not query:
             self.filtered_images = self.current_images
         else:
-            self.filtered_images = self.ai_search(query)
+            matched_images = self.ai_search(query)
+            self.filtered_images = [
+                path for path in self.current_images if path in matched_images
+            ]
+            
 
         self.loaded_count = 0
         self.clear_grid()
         self.load_batch()
+
 
     def ai_search(self, query):
         self.search_process.stdin.write(query + "\n")
         self.search_process.stdin.flush()
 
         results = []
+
         while True:
             line = self.search_process.stdout.readline().strip()
             if line == "END":
@@ -208,7 +263,8 @@ class GalleryWindow(QMainWindow):
 
         return results
 
-    # ================= GRID HANDLING =================
+
+    # Step 8: Grid and infinite scroll handling
 
     def load_batch(self):
         images = self.filtered_images
@@ -235,45 +291,109 @@ class GalleryWindow(QMainWindow):
 
         self.loaded_count = end
 
+
     def clear_grid(self):
         self.thumbnail_labels.clear()
-        for i in reversed(range(self.grid_layout.count())):
-            widget = self.grid_layout.itemAt(i).widget()
-            widget.deleteLater()
 
-    def on_thumbnail_loaded(self, path, pix):
+        while self.grid_layout.count():
+            widget = self.grid_layout.takeAt(0).widget()
+            if widget:
+                widget.deleteLater()
+
+
+    def on_thumbnail_loaded(self, path, image):
         if path in self.thumbnail_labels:
-            self.thumbnail_labels[path].setPixmap(pix)
+
+            pixmap = QPixmap.fromImage(image)
+            self.thumbnail_labels[path].setPixmap(pixmap)
+
+
 
     def on_scroll(self):
         scrollbar = self.scroll.verticalScrollBar()
+
         if scrollbar.value() > scrollbar.maximum() - 150:
             self.load_batch()
 
-    # ================= VIEWER =================
+
+    # Step 9: Image viewer
 
     def open_image(self, path):
         viewer = FullImageViewer(path)
         viewer.exec_()
 
-    # ================= CLEAN EXIT =================
+
+    # Step 10: Real-time folder updates
+
+    def on_directory_changed(self, dir_path):
+
+        current_files = {
+            os.path.join(dir_path, f)
+            for f in os.listdir(dir_path)
+            if f.lower().endswith(IMAGE_EXTS)
+        }
+
+        known_files = set(self.album_map["All Photos"])
+
+        new_files = current_files - known_files
+        deleted_files = known_files - current_files
+
+        for path in new_files:
+            self.album_map["All Photos"].append(path)
+
+            rel = os.path.relpath(dir_path, self.base_folder)
+
+            if rel == ".":
+                album = "Misc"
+            else:
+                parts = rel.split(os.sep)
+                album = f"{parts[0]} / {parts[1]}" if len(parts) >= 2 else parts[0]
+
+
+            self.album_map.setdefault(album, []).append(path)
+
+            self.encoder_process.stdin.write(path + "\n")
+            self.encoder_process.stdin.flush()
+
+        for path in deleted_files:
+            for album in self.album_map:
+                if path in self.album_map[album]:
+                    self.album_map[album].remove(path)
+
+        self.current_images = self.album_map.get(self.current_album, [])
+        self.filtered_images = self.current_images
+
+        self.clear_grid()
+        self.load_batch()
+
+
+    # Step 11: Clean shutdown
 
     def closeEvent(self, event):
         try:
+            self.encoder_process.stdin.write("EXIT\n")
             self.search_process.stdin.write("EXIT\n")
+
+            self.encoder_process.stdin.flush()
             self.search_process.stdin.flush()
-            self.search_process.kill()
-        except:
-            pass
+
+            self.encoder_process.terminate()
+            self.search_process.terminate()
+
+        except Exception as e:
+            print("Shutdown error:", e)
+
         event.accept()
 
-# ================= ENTRY =================
+
+# Step 12: App entry point
 
 if __name__ == "__main__":
     app = QApplication([])
 
     BASE_FOLDER = r"D:\Personal\PHOTOS"
-    window = GalleryWindow(BASE_FOLDER)
 
+    window = GalleryWindow(BASE_FOLDER)
     window.show()
+
     app.exec_()

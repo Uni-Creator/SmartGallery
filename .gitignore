@@ -1,0 +1,8 @@
+*.npy
+embeddings/
+data/
+.env
+__pycache__/
+.vscode/
+temp_thumb.jpg
+*test*.py

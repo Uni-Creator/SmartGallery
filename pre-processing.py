@@ -1,51 +1,55 @@
 import os
 import pandas as pd
-
-# ================== SETTINGS ==================
-
-directory_path = r"D:\Personal\PHOTOS"
-exclude_dirs = ["Project", "Snapchat"]
-valid_extensions = ["jpeg", "jpg", "png"]
-
-# ================== STEP 1: SCAN IMAGES ==================
-
-print("Scanning directory for image files...")
-files_list = []
-
-for root, dirs, files in os.walk(directory_path):
-
-    # Remove excluded directories
-    dirs[:] = [d for d in dirs if d not in exclude_dirs]
-
-    for file in files:
-        if file.split(".")[-1].lower() in valid_extensions:
-            files_list.append(os.path.join(root, file))
-
-print(f"Total files found: {len(files_list)}")
-
-image_ids = [f"img_{i+1:05d}" for i in range(len(files_list))]
-df = pd.DataFrame({
-    "image_id": image_ids,
-    "image_path": files_list
-})
-
-# df.to_csv("data\image_files_list.csv", index=False)
-# print("Image list CSV created.")
+from pathlib import Path
 
 
-# ================== STEP 2: EXTRACT GROUP INFO ==================
+# Step 1: Configuration parameters and paths
+
+BASE_DIR = Path(r"D:\Personal\PHOTOS")
+VALID_EXTENSIONS = {"jpg", "jpeg", "png"}
+
+OUTPUT_DIR = Path("data")
+OUTPUT_DIR.mkdir(exist_ok=True)
+OUTPUT_FILE = OUTPUT_DIR / "final_cleaned_data.csv"
+
+
+# Step 2: Scan directory for image files
+
+def scan_images(base_dir,  valid_extensions):
+
+    print("Scanning directory for image files...")
+    image_paths = []
+
+    for root, dirs, files in os.walk(base_dir):
+
+        for file in files:
+            if file.lower().split(".")[-1] in valid_extensions:
+                image_paths.append(Path(root) / file)
+
+    print(f"Total files found: {len(image_paths)}")
+
+    image_ids = [f"img_{i+1:05d}" for i in range(len(image_paths))]
+
+    df = pd.DataFrame({
+        "image_id": image_ids,
+        "image_path": [str(p) for p in image_paths]
+    })
+
+    return df
+
+
+# Step 3: Extract group, subgroup and event from image path
 
 def extract_group_info(path):
-    path = path.replace("\\", "/")
-    folders = path.split("/")
 
-    if "PHOTOS" in folders:
-        base_index = folders.index("PHOTOS")
+    parts = Path(path).parts
 
-        group = folders[base_index + 1] if len(folders) > base_index + 1 else "Unknown"
-        subgroup = folders[base_index + 2] if len(folders) > base_index + 2 else "Unknown"
-        event = folders[base_index + 3] if len(folders) > base_index + 3 else ""
+    if "PHOTOS" in parts:
+        base_index = parts.index("PHOTOS")
 
+        group = parts[base_index + 1] if len(parts) > base_index + 1 else "Unknown"
+        subgroup = parts[base_index + 2] if len(parts) > base_index + 2 else "Unknown"
+        event = parts[base_index + 3] if len(parts) > base_index + 3 else ""
     else:
         group = "Unknown"
         subgroup = "Unknown"
@@ -54,51 +58,56 @@ def extract_group_info(path):
     return group, subgroup, event
 
 
-groups = df["image_path"].apply(extract_group_info)
-
-df["group"] = [g[0] for g in groups]
-df["subgroup"] = [g[1] for g in groups]
-df["event_name"] = [g[2] for g in groups]
-
-print("Group, Subgroup, Event extracted.")
-
-
-# ================== STEP 3: CLEAN EVENT + SUBGROUP ==================
+# Step 4: Clean event and subgroup values
 
 def clean_event(event):
+
     if pd.isna(event):
         return "no_event"
 
     event = str(event).strip().lower()
 
-    if event.endswith((".jpg", ".jpeg", ".png")):
-        return "no_event"
-
-    if event == "":
+    if event.endswith((".jpg", ".jpeg", ".png")) or event == "":
         return "no_event"
 
     return event
 
 
 def clean_subgroup(subgroup):
+
     if pd.isna(subgroup):
         return "no_subgroup"
 
     subgroup = str(subgroup).strip().lower()
 
-    if subgroup.endswith((".jpg", ".jpeg", ".png")):
-        return "no_subgroup"
-
-    if subgroup == "":
+    if subgroup.endswith((".jpg", ".jpeg", ".png")) or subgroup == "":
         return "no_subgroup"
 
     return subgroup
 
 
-df["event_name"] = df["event_name"].apply(clean_event)
-df["subgroup"] = df["subgroup"].apply(clean_subgroup)
+# Step 5: Build final dataframe
 
-# ================== STEP 4: SAVE FINAL ==================
+def main():
 
-df.to_csv("data\\final_cleaned_data.csv", index=False)
-print("Final cleaned dataset saved as: final_cleaned_data.csv")
+    df = scan_images(BASE_DIR, VALID_EXTENSIONS)
+
+    print("Extracting group, subgroup, and event name...")
+    group_data = df["image_path"].apply(extract_group_info)
+
+    df["group"] = group_data.map(lambda x: x[0])
+    df["subgroup"] = group_data.map(lambda x: x[1])
+    df["event_name"] = group_data.map(lambda x: x[2])
+
+    print("Cleaning subgroup and event...")
+    df["subgroup"] = df["subgroup"].apply(clean_subgroup)
+    df["event_name"] = df["event_name"].apply(clean_event)
+
+    df.to_csv(OUTPUT_FILE, index=False)
+    print(f"Final cleaned dataset saved to: {OUTPUT_FILE}")
+
+
+# Step 6: Script entry point
+
+if __name__ == "__main__":
+    main()
