@@ -13,7 +13,6 @@ embeddings/*.idx
 # Temporary images
 temp_*
 *.jpg
-*.png
 
 # OS
 .DS_Store
