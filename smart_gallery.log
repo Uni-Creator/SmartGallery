@@ -1,0 +1,126 @@
+14:58:24 | INFO | GalleryWindow | Starting subprocess: ['python', 'search_server.py']
+14:58:30 | INFO | GalleryWindow | Subprocess ready: ['python', 'search_server.py']
+14:58:30 | INFO | GalleryWindow | Starting subprocess: ['python', 'encoder_server.py']
+14:58:34 | INFO | GalleryWindow | Subprocess ready: ['python', 'encoder_server.py']
+14:58:35 | INFO | GalleryWindow | Album map built (21 albums)
+14:58:35 | INFO | ThumbnailWorker | Thumbnail index loaded (3264 entries)
+14:58:37 | INFO | GalleryWindow | Thumbnail cache loaded
+14:59:03 | INFO | GalleryWindow | Checking for folder updates...
+14:59:03 | INFO | GalleryWindow | Detected 108 new files and 0 deleted files.
+14:59:03 | INFO | GalleryWindow | Directory changed, rebuilding albums...
+14:59:03 | INFO | GalleryWindow | Album map built (22 albums)
+14:59:22 | INFO | GalleryWindow | Checking for folder updates...
+14:59:22 | INFO | GalleryWindow | Detected 0 new files and 108 deleted files.
+14:59:22 | INFO | GalleryWindow | Directory changed, rebuilding albums...
+14:59:22 | INFO | GalleryWindow | Album map built (21 albums)
+14:59:33 | INFO | GalleryWindow | Checking for folder updates...
+14:59:33 | INFO | GalleryWindow | Detected 108 new files and 0 deleted files.
+14:59:33 | INFO | GalleryWindow | Directory changed, rebuilding albums...
+14:59:33 | INFO | GalleryWindow | Album map built (22 albums)
+15:09:40 | INFO | GalleryWindow | Starting subprocess: ['python', 'search_server.py']
+15:09:47 | INFO | GalleryWindow | Subprocess ready: ['python', 'search_server.py']
+15:09:47 | INFO | GalleryWindow | Starting subprocess: ['python', 'encoder_server.py']
+15:09:51 | INFO | GalleryWindow | Subprocess ready: ['python', 'encoder_server.py']
+15:09:51 | INFO | GalleryWindow | Album map built (22 albums)
+15:09:51 | INFO | ThumbnailWorker | Thumbnail index loaded (3264 entries)
+15:09:54 | INFO | GalleryWindow | Thumbnail cache loaded
+15:09:59 | INFO | GalleryWindow | Checking for folder updates...
+15:09:59 | INFO | GalleryWindow | No changes detected.
+15:10:38 | INFO | GalleryWindow | Starting subprocess: ['python', 'search_server.py']
+15:10:45 | INFO | GalleryWindow | Subprocess ready: ['python', 'search_server.py']
+15:10:45 | INFO | GalleryWindow | Starting subprocess: ['python', 'encoder_server.py']
+15:10:51 | INFO | GalleryWindow | Subprocess ready: ['python', 'encoder_server.py']
+15:10:51 | INFO | GalleryWindow | Album map built (21 albums)
+15:10:51 | INFO | ThumbnailWorker | Thumbnail index loaded (3264 entries)
+15:10:55 | INFO | GalleryWindow | Thumbnail cache loaded
+15:11:40 | INFO | GalleryWindow | Checking for folder updates...
+15:11:40 | INFO | GalleryWindow | Detected 108 new files and 0 deleted files.
+15:11:40 | INFO | GalleryWindow | Directory changed, rebuilding albums...
+15:11:40 | INFO | GalleryWindow | Album map built (22 albums)
+15:15:44 | INFO | GalleryWindow | Starting subprocess: ['python', 'search_server.py']
+15:15:51 | INFO | GalleryWindow | Subprocess ready: ['python', 'search_server.py']
+15:15:51 | INFO | GalleryWindow | Starting subprocess: ['python', 'encoder_server.py']
+15:15:55 | INFO | GalleryWindow | Subprocess ready: ['python', 'encoder_server.py']
+15:15:55 | INFO | GalleryWindow | Album map built (21 albums)
+15:15:55 | INFO | ThumbnailWorker | Thumbnail index loaded (3264 entries)
+15:15:57 | INFO | GalleryWindow | Thumbnail cache loaded
+15:16:01 | INFO | GalleryWindow | Checking for folder updates...
+15:16:01 | INFO | GalleryWindow | No changes detected.
+15:16:07 | INFO | GalleryWindow | Checking for folder updates...
+15:16:07 | INFO | GalleryWindow | Detected 108 new files and 0 deleted files.
+15:16:07 | INFO | GalleryWindow | Directory changed, rebuilding albums...
+15:16:07 | INFO | GalleryWindow | Album map built (22 albums)
+15:18:47 | INFO | GalleryWindow | Starting subprocess: ['python', 'search_server.py']
+15:18:54 | INFO | GalleryWindow | Subprocess ready: ['python', 'search_server.py']
+15:18:54 | INFO | GalleryWindow | Starting subprocess: ['python', 'encoder_server.py']
+15:18:59 | INFO | GalleryWindow | Subprocess ready: ['python', 'encoder_server.py']
+15:18:59 | INFO | GalleryWindow | Album map built (22 albums)
+15:18:59 | INFO | ThumbnailWorker | Thumbnail index loaded (3264 entries)
+15:19:02 | INFO | GalleryWindow | Thumbnail cache loaded
+15:19:10 | INFO | GalleryWindow | Checking for folder updates...
+15:19:10 | INFO | GalleryWindow | Detected 0 new files and 108 deleted files.
+15:19:10 | INFO | GalleryWindow | Directory changed, rebuilding albums...
+15:19:10 | INFO | GalleryWindow | Album map built (21 albums)
+15:19:10 | INFO | GalleryWindow | Encoder server updated successfully.
+15:19:33 | INFO | GalleryWindow | Checking for folder updates...
+15:19:33 | INFO | GalleryWindow | Detected 108 new files and 0 deleted files.
+15:19:33 | INFO | GalleryWindow | Directory changed, rebuilding albums...
+15:19:33 | INFO | GalleryWindow | Album map built (22 albums)
+15:19:42 | INFO | GalleryWindow | Encoder server updated successfully.
+15:25:24 | INFO | GalleryWindow | Starting subprocess: ['python', 'search_server.py']
+15:25:48 | INFO | GalleryWindow | Starting subprocess: ['python', 'search_server.py']
+15:25:55 | INFO | GalleryWindow | Subprocess ready: ['python', 'search_server.py']
+15:25:55 | INFO | GalleryWindow | Starting subprocess: ['python', 'encoder_server.py']
+15:25:59 | INFO | GalleryWindow | Subprocess ready: ['python', 'encoder_server.py']
+15:25:59 | INFO | GalleryWindow | Album map built (22 albums)
+15:25:59 | INFO | ThumbnailWorker | Thumbnail index loaded (3264 entries)
+15:26:02 | INFO | GalleryWindow | Thumbnail cache loaded
+15:46:10 | INFO | GalleryWindow | Starting subprocess: ['python', 'search_server.py']
+15:46:18 | INFO | GalleryWindow | Subprocess ready: ['python', 'search_server.py']
+15:46:18 | INFO | GalleryWindow | Starting subprocess: ['python', 'encoder_server.py']
+15:46:22 | INFO | GalleryWindow | Subprocess ready: ['python', 'encoder_server.py']
+15:46:22 | INFO | GalleryWindow | Album map built (22 albums)
+15:46:22 | INFO | ThumbnailWorker | Thumbnail index loaded (3264 entries)
+15:46:25 | INFO | GalleryWindow | Thumbnail cache loaded
+15:46:28 | INFO | GalleryWindow | Checking for folder updates...
+15:46:28 | INFO | GalleryWindow | Detected 0 new files and 108 deleted files.
+15:46:28 | INFO | GalleryWindow | Directory changed, rebuilding albums...
+15:46:28 | INFO | GalleryWindow | Album map built (21 albums)
+15:46:34 | INFO | GalleryWindow | Checking for folder updates...
+15:46:34 | INFO | GalleryWindow | Detected 108 new files and 0 deleted files.
+15:46:34 | INFO | GalleryWindow | Directory changed, rebuilding albums...
+15:46:34 | INFO | GalleryWindow | Album map built (22 albums)
+15:49:05 | INFO | GalleryWindow | Starting subprocess: ['python', 'search_server.py']
+15:49:13 | INFO | GalleryWindow | Subprocess ready: ['python', 'search_server.py']
+15:49:13 | INFO | GalleryWindow | Starting subprocess: ['python', 'encoder_server.py']
+15:49:20 | INFO | GalleryWindow | Subprocess ready: ['python', 'encoder_server.py']
+15:49:20 | INFO | GalleryWindow | Album map built (21 albums)
+15:49:20 | INFO | ThumbnailWorker | Thumbnail index loaded (3264 entries)
+15:49:23 | INFO | GalleryWindow | Thumbnail cache loaded
+15:49:33 | INFO | GalleryWindow | Checking for folder updates...
+15:49:33 | INFO | GalleryWindow | Detected 108 new files and 0 deleted files.
+15:49:33 | INFO | GalleryWindow | Directory changed, rebuilding albums...
+15:49:34 | INFO | GalleryWindow | Album map built (22 albums)
+15:51:12 | INFO | GalleryWindow | Starting subprocess: ['python', 'search_server.py']
+15:51:19 | INFO | GalleryWindow | Subprocess ready: ['python', 'search_server.py']
+15:51:19 | INFO | GalleryWindow | Starting subprocess: ['python', 'encoder_server.py']
+15:51:23 | INFO | GalleryWindow | Subprocess ready: ['python', 'encoder_server.py']
+15:51:23 | INFO | GalleryWindow | Album map built (21 albums)
+15:51:23 | INFO | ThumbnailWorker | Thumbnail index loaded (3264 entries)
+15:51:26 | INFO | GalleryWindow | Thumbnail cache loaded
+15:51:38 | INFO | GalleryWindow | Checking for folder updates...
+15:51:38 | INFO | GalleryWindow | Detected 108 new files and 0 deleted files.
+15:51:38 | INFO | GalleryWindow | Directory changed, rebuilding albums...
+15:51:38 | INFO | GalleryWindow | Album map built (22 albums)
+15:56:58 | INFO | GalleryWindow | Starting subprocess: ['python', 'search_server.py']
+15:57:05 | INFO | GalleryWindow | Subprocess ready: ['python', 'search_server.py']
+15:57:05 | INFO | GalleryWindow | Starting subprocess: ['python', 'encoder_server.py']
+15:57:10 | INFO | GalleryWindow | Subprocess ready: ['python', 'encoder_server.py']
+15:57:10 | INFO | GalleryWindow | Album map built (21 albums)
+15:57:10 | INFO | ThumbnailWorker | Thumbnail index loaded (3264 entries)
+15:57:12 | INFO | GalleryWindow | Thumbnail cache loaded
+15:57:20 | INFO | GalleryWindow | Checking for folder updates...
+15:57:21 | INFO | GalleryWindow | Detected 108 new files and 0 deleted files.
+15:57:21 | INFO | GalleryWindow | Directory changed, rebuilding albums...
+15:57:21 | INFO | GalleryWindow | Album map built (22 albums)
+15:57:25 | INFO | GalleryWindow | Encoder updated successfully

@@ -7,8 +7,7 @@ from io import BytesIO
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QLabel,
     QLineEdit, QVBoxLayout, QHBoxLayout,
-    QGridLayout, QScrollArea, QListWidget,
-    QListWidgetItem, QDialog
+    QGridLayout, QScrollArea, QListWidget, QDialog, QPushButton
 )
 
 from PyQt5.QtGui import QPixmap, QImage
@@ -17,6 +16,26 @@ from PIL import Image
 import numpy as np
 import hashlib
 import json
+import logging
+from logging.handlers import RotatingFileHandler
+
+
+LOG_FILE = "smart_gallery.log"
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+    datefmt="%H:%M:%S",
+    handlers=[
+        RotatingFileHandler(LOG_FILE, maxBytes=5 * 1024 * 1024, backupCount=3),
+        logging.StreamHandler()
+    ]
+)
+
+logger = logging.getLogger("SmartGallery")
+
+
+
 
 os.environ["QT_LOGGING_RULES"] = "qt.gui.icc=false"
 
@@ -34,18 +53,23 @@ class ThumbnailWorker(QObject):
 
     def __init__(self, cache, cache_dir=CACHE_THUMBNAILS_DIR):
         super().__init__()
+        self.log = logging.getLogger("ThumbnailWorker")
+        
         self.queue = Queue()
         self.cache = cache
         self.cache_dir = cache_dir
         os.makedirs(self.cache_dir, exist_ok=True)
+        
         self.index_path = os.path.join(self.cache_dir, "index.json")
         self._index = {}
+        
         # Load index if exists (not the actual images yet)
         try:
             with open(self.index_path, "r", encoding="utf-8") as f:
                 self._index = json.load(f)
+            self.log.info("Thumbnail index loaded (%d entries)", len(self._index))
         except Exception as e:
-            print("Thumbnail index load error:", e)
+            self.log.warning(f"No thumbnail index found, Error: {e}")
             self._index = {}
 
         self.thread = threading.Thread(target=self.process_queue, daemon=True)
@@ -71,6 +95,8 @@ class ThumbnailWorker(QObject):
         self.queue.put(path)
 
     def process_queue(self):
+        self.log.info("Thumbnail worker started")
+        
         while True:
             path = self.queue.get()
 
@@ -102,13 +128,13 @@ class ThumbnailWorker(QObject):
                     with open(self.index_path, "w", encoding="utf-8") as f:
                         json.dump(self._index, f)
                 except Exception as e:
-                    print("Thumbnail save error:", e)
+                    self.log.error("Failed saving thumbnail", exc_info=True)
 
                 # Notify UI
                 self.thumbnail_loaded.emit(path, image)
 
             except Exception as e:
-                print("Thumbnail error:", e)
+                self.log.error("Thumbnail processing error", exc_info=True)
 
     def load_cache(self):
         # Load thumbnails from index and emit signals so the UI can update
@@ -161,6 +187,8 @@ class FullImageViewer(QDialog):
 class GalleryWindow(QMainWindow):
     def __init__(self, base_folder):
         super().__init__()
+        
+        self.log = logging.getLogger("GalleryWindow")
 
         self.setWindowTitle("Smart Gallery")
         self.resize(1400, 800)
@@ -187,12 +215,14 @@ class GalleryWindow(QMainWindow):
         # Connect signal first so load_cache emits are received
         self.thumbnail_worker.thumbnail_loaded.connect(self.on_thumbnail_loaded)
         self.thumbnail_worker.load_cache()
+        
         if self.thumbnail_cache:
-            print("Thumbnail cache loaded.")
+            self.log.info("Thumbnail cache loaded")
         else:
-            print("No thumbnail cache found. Loading on-the-fly.")
+            self.log.warning("No thumbnail cache found, generating on demand")
             self.thumbnail_worker.thread.start()
-            self.thumbnail_worker.save
+
+            
 
         # Step 3.4: Build UI
         self.init_ui()
@@ -201,6 +231,8 @@ class GalleryWindow(QMainWindow):
 
     # Step 4: Subprocess startup helper
     def start_subprocess(self, command, ready_flag):
+        self.log.info("Starting subprocess: %s", command)
+
         process = subprocess.Popen(
             command,
             stdin=subprocess.PIPE,
@@ -214,7 +246,9 @@ class GalleryWindow(QMainWindow):
             line = process.stdout.readline().strip()
             if line == ready_flag:
                 break
-
+        
+        self.log.info("Subprocess ready: %s", command)
+    
         return process
 
 
@@ -233,12 +267,18 @@ class GalleryWindow(QMainWindow):
         main_layout.addWidget(self.album_list, 1)
 
         right_layout = QVBoxLayout()
+        search_layout = QHBoxLayout()
 
         self.search_box = QLineEdit()
         self.search_box.setPlaceholderText("Type and press ENTER to search...")
         self.search_box.returnPressed.connect(self.run_search)
+        
+        self.refresh_button = QPushButton("Refresh")
+        self.refresh_button.clicked.connect(self.check_for_updates)
 
-        right_layout.addWidget(self.search_box)
+        search_layout.addWidget(self.search_box)
+        search_layout.addWidget(self.refresh_button) 
+        right_layout.addLayout(search_layout)
 
         self.scroll = QScrollArea()
         self.scroll.setWidgetResizable(True)
@@ -280,7 +320,8 @@ class GalleryWindow(QMainWindow):
                             album = parts[0]
 
                     album_map.setdefault(album, []).append(path)
-
+                    
+        self.log.info("Album map built (%d albums)", len(album_map))
         return album_map
 
 
@@ -359,6 +400,7 @@ class GalleryWindow(QMainWindow):
 
     def clear_grid(self):
         self.thumbnail_labels.clear()
+        self.loaded_count = 0
 
         while self.grid_layout.count():
             widget = self.grid_layout.takeAt(0).widget()
@@ -385,48 +427,72 @@ class GalleryWindow(QMainWindow):
     def open_image(self, path):
         viewer = FullImageViewer(path)
         viewer.exec_()
+        
+    def check_for_updates(self):
+        self.log.info("Checking for folder updates...")
+        known_files = set(self.album_map["All Photos"])
+        current_files = {
+            os.path.join(root, f)
+            for root, _, files in os.walk(self.base_folder)
+            for f in files
+            if f.lower().endswith(IMAGE_EXTS)
+        }
+        new_files = current_files - known_files
+        deleted_files = known_files - current_files
+        
+        if known_files == current_files:
+            self.log.info("No changes detected.")
+            return 
+        
+        self.log.info(f"Detected {len(new_files)} new files and {len(deleted_files)} deleted files.")
+        self.on_directory_changed()
+        
+        # Notify encoder server about new files
+        self.encoder_process.stdin.write("UPDATE\n")
+        self.encoder_process.stdin.flush()
+
+        for image in new_files:
+            self.encoder_process.stdin.write(image + "\n")
+            self.encoder_process.stdin.flush()
+
+        self.encoder_process.stdin.write("END_UPDATE\n")
+        self.encoder_process.stdin.flush()
+
+        response = self.encoder_process.stdout.readline().strip()
+
+        if response == "ENCODED":
+            self.log.info("Encoder updated successfully")
+        else:
+            self.log.error(f"Encoder error: {response}")
 
 
     # Step 10: Real-time folder updates
-    def on_directory_changed(self, dir_path):
+    def on_directory_changed(self):
+        self.log.info("Directory changed, rebuilding albums...")
 
-        current_files = {
-            os.path.join(dir_path, f)
-            for f in os.listdir(dir_path)
-            if f.lower().endswith(IMAGE_EXTS)
-        }
+        # Rebuild album map
+        self.album_map = self.build_album_map()
 
-        known_files = set(self.album_map["All Photos"])
+        # Clear album list safely
+        self.album_list.blockSignals(True)
+        self.album_list.clear()
 
-        new_files = current_files - known_files
-        deleted_files = known_files - current_files
+        for album in self.album_map:
+            self.album_list.addItem(album)
 
-        for path in new_files:
-            self.album_map["All Photos"].append(path)
+        self.album_list.blockSignals(False)
 
-            rel = os.path.relpath(dir_path, self.base_folder)
-
-            if rel == ".":
-                album = "Misc"
-            else:
-                parts = rel.split(os.sep)
-                album = f"{parts[0]} / {parts[1]}" if len(parts) >= 2 else parts[0]
-
-
-            self.album_map.setdefault(album, []).append(path)
-
-            self.encoder_process.stdin.write(path + "\n")
-            self.encoder_process.stdin.flush()
-
-        for path in deleted_files:
-            for album in self.album_map:
-                if path in self.album_map[album]:
-                    self.album_map[album].remove(path)
-
-        self.current_images = self.album_map.get(self.current_album, [])
+        # Reset state
+        self.current_album = "All Photos"
+        self.current_images = self.album_map[self.current_album]
         self.filtered_images = self.current_images
 
         self.clear_grid()
+
+        # Select first album explicitly
+        self.album_list.setCurrentRow(0)
+
+        # Load thumbnails (DO NOT restart worker thread)
         self.load_batch()
 
 

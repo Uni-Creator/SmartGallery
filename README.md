@@ -240,14 +240,15 @@ self.batch_size = 100  # Images loaded per scroll
 
 ## Future Enhancements
 
-- [ ] Multi-threaded image processing pipeline
-- [ ] Web-based interface (Flask/React)
-- [ ] Batch image uploading with automatic processing
-- [ ] Advanced filtering and faceted search
-- [ ] Image clustering and recommendations
-- [ ] Database backend (PostgreSQL + pgvector)
-- [ ] REST API for programmatic access
-- [ ] Image deduplication detection
+- [❌] Multi-threaded image processing pipeline
+- [❌] Web-based interface (Flask/React)
+- [✅] Batch image uploading with automatic processing
+- [❌] Advanced filtering and faceted search
+- [❌] Image clustering and recommendations
+- [❌] Database backend (PostgreSQL + pgvector)
+- [❌] REST API for programmatic access
+- [❌] Image deduplication detection
+- [❌] Automatically remove deleted image's embeddings
 
 ## License
 
