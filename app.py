@@ -2,7 +2,6 @@ import os
 import subprocess
 from queue import Queue
 import threading
-from io import BytesIO
 
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QLabel,
@@ -10,15 +9,13 @@ from PyQt5.QtWidgets import (
     QGridLayout, QScrollArea, QListWidget, QDialog, QPushButton
 )
 
-from PyQt5.QtGui import QPixmap, QImage
+from PyQt5.QtGui import QPixmap, QImage, QIcon
 from PyQt5.QtCore import Qt, pyqtSignal, QObject
-from PIL import Image
-import numpy as np
 import hashlib
 import json
 import logging
 from logging.handlers import RotatingFileHandler
-
+from pathlib import Path
 
 LOG_FILE = "smart_gallery.log"
 
@@ -44,6 +41,7 @@ IMAGE_EXTS = (".jpg", ".jpeg", ".png", ".bmp", ".webp")
 SEARCH_SERVER_CMD = ["python", "search_server.py"]
 ENCODER_SERVER_CMD = ["python", "encoder_server.py"]
 CACHE_THUMBNAILS_DIR = "data/.thumbnails"
+ICON_PATH = Path("assests/Icon")
 
 
 # Step 1: Thumbnail background worker
@@ -185,6 +183,7 @@ class FullImageViewer(QDialog):
 # Step 3: Main gallery window
 
 class GalleryWindow(QMainWindow):
+    
     def __init__(self, base_folder):
         super().__init__()
         
@@ -274,6 +273,7 @@ class GalleryWindow(QMainWindow):
         self.search_box.returnPressed.connect(self.run_search)
         
         self.refresh_button = QPushButton("Refresh")
+        self.refresh_button.setIcon(QIcon(str(ICON_PATH / "refresh.png")))
         self.refresh_button.clicked.connect(self.check_for_updates)
 
         search_layout.addWidget(self.search_box)
@@ -324,8 +324,6 @@ class GalleryWindow(QMainWindow):
         self.log.info("Album map built (%d albums)", len(album_map))
         return album_map
 
-
-
     def change_album(self):
         album = self.album_list.currentItem().text()
 
@@ -354,7 +352,6 @@ class GalleryWindow(QMainWindow):
         self.loaded_count = 0
         self.clear_grid()
         self.load_batch()
-
 
     def ai_search(self, query):
         self.search_process.stdin.write(query + "\n")
@@ -397,7 +394,6 @@ class GalleryWindow(QMainWindow):
 
         self.loaded_count = end
 
-
     def clear_grid(self):
         self.thumbnail_labels.clear()
         self.loaded_count = 0
@@ -407,14 +403,11 @@ class GalleryWindow(QMainWindow):
             if widget:
                 widget.deleteLater()
 
-
     def on_thumbnail_loaded(self, path, image):
         if path in self.thumbnail_labels:
 
             pixmap = QPixmap.fromImage(image)
             self.thumbnail_labels[path].setPixmap(pixmap)
-
-
 
     def on_scroll(self):
         scrollbar = self.scroll.verticalScrollBar()
@@ -428,8 +421,12 @@ class GalleryWindow(QMainWindow):
         viewer = FullImageViewer(path)
         viewer.exec_()
         
+        
+    # Step 10: Real-time (Technically on refresh) updates
     def check_for_updates(self):
+        
         self.log.info("Checking for folder updates...")
+
         known_files = set(self.album_map["All Photos"])
         current_files = {
             os.path.join(root, f)
@@ -437,37 +434,59 @@ class GalleryWindow(QMainWindow):
             for f in files
             if f.lower().endswith(IMAGE_EXTS)
         }
+
         new_files = current_files - known_files
         deleted_files = known_files - current_files
-        
-        if known_files == current_files:
+
+        if not new_files and not deleted_files:
             self.log.info("No changes detected.")
-            return 
-        
-        self.log.info(f"Detected {len(new_files)} new files and {len(deleted_files)} deleted files.")
-        self.on_directory_changed()
-        
-        # Notify encoder server about new files
+            return
+
+        self.log.info(
+            f"Detected {len(new_files)} new files and {len(deleted_files)} deleted files."
+        )
+
+        if new_files:
+            success = self.update_embeddings(new_files)
+            if not success:
+                self.log.error("Encoder update failed")
+                return
+
+        if deleted_files:
+            self.handle_deleted_files(deleted_files)  
+
+        self.rebuild_albums()
+
+    def update_embeddings(self, new_files: set[str]) -> bool:
+        if not new_files:
+            return True
+
         self.encoder_process.stdin.write("UPDATE\n")
         self.encoder_process.stdin.flush()
 
         for image in new_files:
             self.encoder_process.stdin.write(image + "\n")
-            self.encoder_process.stdin.flush()
 
         self.encoder_process.stdin.write("END_UPDATE\n")
         self.encoder_process.stdin.flush()
 
         response = self.encoder_process.stdout.readline().strip()
 
+        if response.startswith("ERROR"):
+            self.log.error(response)
+            return False
+
         if response == "ENCODED":
             self.log.info("Encoder updated successfully")
-        else:
-            self.log.error(f"Encoder error: {response}")
+            return True
 
+        self.log.error(f"Unexpected encoder response: {response}")
+        return False
 
-    # Step 10: Real-time folder updates
-    def on_directory_changed(self):
+    def handle_deleted_files(self, files: set[str]):
+        ...
+
+    def rebuild_albums(self):
         self.log.info("Directory changed, rebuilding albums...")
 
         # Rebuild album map

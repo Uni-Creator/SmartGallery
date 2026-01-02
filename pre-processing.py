@@ -10,7 +10,7 @@ VALID_EXTENSIONS = {"jpg", "jpeg", "png"}
 
 OUTPUT_DIR = Path("data")
 OUTPUT_DIR.mkdir(exist_ok=True)
-OUTPUT_FILE = OUTPUT_DIR / "final_cleaned_data.csv"
+OUTPUT_FILE = OUTPUT_DIR / "images_path.csv"
 
 
 # Step 2: Scan directory for image files

@@ -1,32 +1,29 @@
 import sys
 from pathlib import Path
 import numpy as np
-from PIL import Image
 import torch
-import clip
 import faiss
 import pandas as pd
+from image_captioning_clip_pipeline import EmbeddingGenerator
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 FAISS_INDEX_PATH = Path("embeddings/image_faiss_index.idx")
 EMBEDDINGS_PATH = Path("embeddings/image_embeddings_normalized.npy")
-CSV_PATH = Path("data/images_with_captions_and_tags.csv")
+CSV_PATH = Path("data/images_path.csv")
 
-model, preprocess = clip.load("ViT-B/32", device=DEVICE)
-model.eval()
+embedder = EmbeddingGenerator(DEVICE)
 
 index = faiss.read_index(str(FAISS_INDEX_PATH))
 df = pd.read_csv(CSV_PATH)
 image_paths = df["image_path"].tolist()
 image_embeddings = np.load(EMBEDDINGS_PATH).astype(np.float32)
 
-def encode_single_image(path: str) -> np.ndarray:
-    image = preprocess(Image.open(path).convert("RGB")).unsqueeze(0).to(DEVICE)
-    with torch.no_grad():
-        emb = model.encode_image(image)
-        emb = emb / emb.norm(dim=-1, keepdim=True)
-    return emb.cpu().numpy().astype(np.float32)
+
+def encode_images(paths: list[str]) -> np.ndarray:
+    return embedder.embed_images(paths)
+
+    
 
 print("ENCODER_READY", flush=True)
 
@@ -40,7 +37,6 @@ while True:
         break
 
     if line == "UPDATE":
-        new_vectors = []
         new_paths = []
 
         while True:
@@ -50,20 +46,20 @@ while True:
 
             if not Path(img).exists():
                 print(f"ERROR Image not found: {img}", flush=True)
-                new_vectors = []
+                new_paths = []
                 break
 
-            vec = encode_single_image(img)
-            new_vectors.append(vec)
             new_paths.append(img)
 
-        if not new_vectors:
+        if not new_paths:
             continue
 
-        new_vectors = np.vstack(new_vectors)
+        new_embeddings = encode_images(new_paths)
 
-        index.add(new_vectors)
-        image_embeddings = np.vstack([image_embeddings, new_vectors])
+        assert new_embeddings.shape[1] == index.d, "Embedding dimension mismatch"
+
+        index.add(new_embeddings)
+        image_embeddings = np.vstack([image_embeddings, new_embeddings])
         image_paths.extend(new_paths)
 
         faiss.write_index(index, str(FAISS_INDEX_PATH))

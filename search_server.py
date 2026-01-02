@@ -4,7 +4,7 @@ from text_search import CLIPSearchEngine
 
 # Step 1: Initialize search engine
 
-CSV_PATH = Path("data") / "images_with_captions_and_tags.csv"
+CSV_PATH = Path("data") / "images_path.csv"
 EMBED_PATH = Path("embeddings") / "image_embeddings_normalized.npy"
 
 engine = CLIPSearchEngine(CSV_PATH, EMBED_PATH)
