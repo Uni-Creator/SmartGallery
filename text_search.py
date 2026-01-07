@@ -124,7 +124,7 @@ class CLIPSearchEngine:
 
     def search_all_above_alpha(self,
                                query: str,
-                               alpha: float = 0.23) -> List[Tuple[str, float]]:
+                               alpha: float = 0.24) -> List[Tuple[str, float]]:
         """
         Perform brute-force cosine similarity search.
 

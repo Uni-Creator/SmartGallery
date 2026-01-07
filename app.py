@@ -1,4 +1,5 @@
 import os
+import queue
 import subprocess
 from queue import Queue
 import threading
@@ -44,7 +45,7 @@ CACHE_THUMBNAILS_DIR = "data/.thumbnails"
 ICON_PATH = Path("assests/Icon")
 
 
-# Step 1: Thumbnail background worker
+# Step 1.1: Thumbnail background worker
 
 class ThumbnailWorker(QObject):
     thumbnail_loaded = pyqtSignal(str, QImage)
@@ -155,6 +156,30 @@ class ThumbnailWorker(QObject):
         except Exception as e:
             print("Thumbnail load error:", e)
 
+# Step 1.2: Background worker thread
+class UpdateWorker:
+    def __init__(self, function):
+        self.function = function
+        self.queue = queue.Queue()
+        self.thread = threading.Thread(
+            target=self._run,
+            daemon=True
+        )
+        self.thread.start()
+
+    def submit(self, paths: list[str]):
+        self.queue.put(paths)
+
+    def _run(self):
+        while True:
+            paths = self.queue.get()
+            if paths is None:
+                break
+
+            try:
+                self.function(paths)
+            finally:
+                self.queue.task_done()
 
 
 # Step 2: Full image viewer dialog
@@ -447,44 +472,66 @@ class GalleryWindow(QMainWindow):
         )
 
         if new_files:
-            success = self.update_embeddings(new_files)
-            if not success:
-                self.log.error("Encoder update failed")
-                return
+            encoder_worker = UpdateWorker(self.update_embeddings)
+            encoder_worker.submit(list(new_files))
 
         if deleted_files:
-            self.handle_deleted_files(deleted_files)  
+            deletion_worker = UpdateWorker(self.handle_deleted_files)
+            deletion_worker.submit(list(deleted_files))
 
         self.rebuild_albums()
 
+    
     def update_embeddings(self, new_files: set[str]) -> bool:
         if not new_files:
-            return True
+            return
 
-        self.encoder_process.stdin.write("UPDATE\n")
+        self.encoder_process.stdin.write("UPDATE_JSON\n")
+        self.encoder_process.stdin.flush()
+            
+        self.encoder_process.stdin.write(json.dumps(list(new_files)) + "\n")
         self.encoder_process.stdin.flush()
 
-        for image in new_files:
-            self.encoder_process.stdin.write(image + "\n")
-
-        self.encoder_process.stdin.write("END_UPDATE\n")
-        self.encoder_process.stdin.flush()
+        # self.encoder_process.stdin.write("END_UPDATE_JSON\n")
+        # self.encoder_process.stdin.flush()
 
         response = self.encoder_process.stdout.readline().strip()
 
         if response.startswith("ERROR"):
             self.log.error(response)
-            return False
+            return 
 
         if response == "ENCODED":
-            self.log.info("Encoder updated successfully")
-            return True
+            self.log.info("Database updated successfully")
+            return 
 
         self.log.error(f"Unexpected encoder response: {response}")
-        return False
 
     def handle_deleted_files(self, files: set[str]):
-        ...
+        if not files:
+            return True
+
+        self.encoder_process.stdin.write("DELETE\n")
+        self.encoder_process.stdin.flush()
+
+        self.encoder_process.stdin.write(json.dumps(list(files)) + "\n")
+        self.encoder_process.stdin.flush()
+
+        # self.encoder_process.stdin.write("END_DELETE\n")
+        # self.encoder_process.stdin.flush()
+
+        response = self.encoder_process.stdout.readline().strip()
+
+        if response.startswith("ERROR"):
+            self.log.error(response)
+            return 
+
+        if response == "DELETED":
+            self.log.info("Database updated successfully")
+            self.log.info(response)
+            return 
+
+        self.log.error(f"Unexpected encoder response: {response}")
 
     def rebuild_albums(self):
         self.log.info("Directory changed, rebuilding albums...")
