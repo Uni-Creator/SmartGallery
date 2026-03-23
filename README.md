@@ -15,6 +15,9 @@ A sophisticated AI-powered image gallery application that enables intelligent se
 
 ## Demo & Screenshots
 
+https://github.com/user-attachments/assets/cd0bea7f-06ff-48d0-9c4f-0b1954e63030
+
+
 ### Main Gallery View
 Shows album-based navigation with infinite scrolling thumbnails.
 
