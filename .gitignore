@@ -2,6 +2,10 @@
 __pycache__/
 *.pyc
 
+# Vscode and IDEs
+.vscode/
+.idea/
+
 # Data files
 data/*.csv
 data/*.xlsx
@@ -18,6 +22,7 @@ data/.thumbnails/*
 
 #logs
 *.log
+smart_gallery.log
 
 
 # OS

@@ -248,7 +248,7 @@ self.batch_size = 100  # Images loaded per scroll
 - [❌] Database backend (PostgreSQL + pgvector)
 - [❌] REST API for programmatic access
 - [❌] Image deduplication detection
-- [❌] Automatically remove deleted image's embeddings
+- [✅] Automatically remove deleted image's embeddings
 
 ## License
 

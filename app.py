@@ -157,6 +157,7 @@ class ThumbnailWorker(QObject):
             print("Thumbnail load error:", e)
 
 # Step 1.2: Background worker thread
+
 class UpdateWorker:
     def __init__(self, function):
         self.function = function
@@ -481,8 +482,7 @@ class GalleryWindow(QMainWindow):
 
         self.rebuild_albums()
 
-    
-    def update_embeddings(self, new_files: set[str]) -> bool:
+    def update_embeddings(self, new_files: set[str]) -> None | bool:
         if not new_files:
             return
 
@@ -507,7 +507,7 @@ class GalleryWindow(QMainWindow):
 
         self.log.error(f"Unexpected encoder response: {response}")
 
-    def handle_deleted_files(self, files: set[str]):
+    def handle_deleted_files(self, files: set[str]) -> None | bool:
         if not files:
             return True
 
